@@ -3,14 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kaamsetu/main.dart';
 import 'package:kaamsetu/models/service_request_model.dart';
 import 'package:kaamsetu/repositories/mock_worker_repository.dart';
+import 'package:kaamsetu/services/auth_service.dart';
 
 void main() {
+  setUp(() {
+    AuthService().logout();
+  });
+
   testWidgets('KaamSetu full user journey test', (WidgetTester tester) async {
-    // 1. Launch App
     await tester.pumpWidget(const KaamSetuApp());
     await tester.pumpAndSettle();
 
-    // Verify Home screen elements
+    expect(find.text('Customer'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Log In'));
+    await tester.pumpAndSettle();
+
     expect(find.text('KaamSetu'), findsWidgets);
     expect(find.text('Find Trusted Workers\nNear You'), findsOneWidget);
     expect(find.text('Electrician'), findsWidgets);

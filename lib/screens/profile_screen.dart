@@ -3,7 +3,6 @@ import '../config/app_config.dart';
 import '../constants/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -112,14 +111,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (!formKey.currentState!.validate()) return;
-                        _authService.updateUserProfile(
+                        await _authService.updateUserProfile(
                           name: nameCtrl.text.trim(),
                           phone: phoneCtrl.text.trim(),
                           address: addressCtrl.text.trim(),
                           email: emailCtrl.text.trim(),
                         );
+                        if (!ctx.mounted || !mounted) return;
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -161,11 +161,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               Navigator.pop(ctx);
               _authService.logout();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const AuthScreen()),
-                (route) => false,
-              );
             },
             child: const Text('Log Out'),
           ),

@@ -1,6 +1,6 @@
 class AppConfig {
-  /// Toggle this to `false` when connecting to live Firebase / Supabase backend.
-  /// When `true`, uses the full local mock dataset of workers, images, and live stream bookings.
+  /// Workers / bookings still use the local mock dataset.
+  /// Auth uses Firebase when `flutterfire configure` has been run.
   static const bool useMockData = true;
 
   static const String appName = 'KaamSetu';

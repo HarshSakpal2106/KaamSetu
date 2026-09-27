@@ -1,15 +1,26 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'config/app_config.dart';
 import 'constants/app_colors.dart';
+import 'firebase_options.dart';
+import 'models/user_model.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_navigation_screen.dart';
+import 'screens/worker_dashboard_screen.dart';
 import 'services/auth_service.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Set status bar colors to match navy brand color
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    debugPrint('Firebase not configured yet. Using mock login. $e');
+  }
+
+  await AuthService().restoreSession();
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -66,9 +77,14 @@ class KaamSetuApp extends StatelessWidget {
           ),
         ),
       ),
-      home: AuthService().isAuthenticated
-          ? const MainNavigationScreen()
-          : const AuthScreen(),
+      home: ValueListenableBuilder<UserModel?>(
+        valueListenable: AuthService().currentUser,
+        builder: (context, user, _) {
+          if (user == null) return const AuthScreen();
+          if (user.isWorker) return const WorkerDashboardScreen();
+          return const MainNavigationScreen();
+        },
+      ),
     );
   }
 }

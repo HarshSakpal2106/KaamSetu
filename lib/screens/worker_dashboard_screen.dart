@@ -3,6 +3,7 @@ import '../constants/app_colors.dart';
 import '../models/service_request_model.dart';
 import '../models/worker_model.dart';
 import '../repositories/mock_worker_repository.dart';
+import '../services/auth_service.dart';
 import '../services/launcher_service.dart';
 
 class WorkerDashboardScreen extends StatefulWidget {
@@ -140,6 +141,11 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
             tooltip: 'Edit Profile',
             onPressed: _showEditProfileSheet,
           ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Log Out',
+            onPressed: () => AuthService().logout(),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -151,15 +157,18 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Column(
                 children: [
-                  Row(
+                      Row(
                     children: [
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: Colors.white24,
-                        backgroundImage: _currentWorker != null
+                        backgroundImage: _currentWorker != null &&
+                                _currentWorker!.image.isNotEmpty &&
+                                !_currentWorker!.isRemoteImage
                             ? AssetImage(_currentWorker!.image)
                             : null,
-                        child: _currentWorker == null
+                        child: _currentWorker == null ||
+                                _currentWorker!.image.isEmpty
                             ? const Icon(Icons.person, color: Colors.white)
                             : null,
                       ),
@@ -169,7 +178,9 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _currentWorker?.businessName ?? 'Ramesh Electrical Services',
+                              AuthService().currentUser.value?.name ??
+                                  _currentWorker?.businessName ??
+                                  'Worker Dashboard',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 17,
@@ -178,7 +189,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${_currentWorker?.name ?? "Ramesh Kumar"} • ${_currentWorker?.category ?? "Electrician"}',
+                              '${AuthService().currentUser.value?.category ?? _currentWorker?.category ?? "Professional"} • ${AuthService().currentUser.value?.shopAddress ?? _currentWorker?.location ?? ""}',
                               style: const TextStyle(color: Colors.white70, fontSize: 13),
                             ),
                             const SizedBox(height: 4),

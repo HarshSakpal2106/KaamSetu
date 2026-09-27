@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
+import '../repositories/mock_worker_repository.dart';
 
 class AuthResult {
   final bool success;
@@ -129,6 +130,10 @@ class AuthService {
       category: category,
     );
 
+    if (currentUser.value!.isWorker) {
+      MockWorkerRepository().addOrUpdateWorkerFromUser(currentUser.value!);
+    }
+
     if (!isFirebaseReady) return;
     await FirebaseFirestore.instance.collection('users').doc(existing.id).set(
           currentUser.value!.toJson(),
@@ -227,6 +232,9 @@ class AuthService {
           .set(profile.toJson());
 
       currentUser.value = profile;
+      if (role == UserRole.worker) {
+        MockWorkerRepository().addOrUpdateWorkerFromUser(profile);
+      }
       return const AuthResult.ok();
     } on FirebaseAuthException catch (e) {
       return AuthResult.fail(_authError(e));
@@ -321,6 +329,9 @@ class AuthService {
       description: description,
       category: category,
     );
+    if (role == UserRole.worker) {
+      MockWorkerRepository().addOrUpdateWorkerFromUser(currentUser.value!);
+    }
     return const AuthResult.ok();
   }
 }

@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import '../models/category_model.dart';
 import '../models/review_model.dart';
 import '../models/service_request_model.dart';
+import '../models/user_model.dart';
 import '../models/work_photo_model.dart';
 import '../models/worker_model.dart';
 import 'worker_repository.dart';
@@ -69,6 +73,14 @@ class MockWorkerRepository implements WorkerRepository {
     ];
   }
 
+  bool get _isFirebaseReady {
+    try {
+      return Firebase.apps.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Future<List<WorkerModel>> getWorkers({
     String? categoryId,
@@ -77,6 +89,23 @@ class MockWorkerRepository implements WorkerRepository {
     double? minRating,
     String? sortBy,
   }) async {
+    if (_isFirebaseReady) {
+      try {
+        final snap = await FirebaseFirestore.instance
+            .collection('users')
+            .where('role', isEqualTo: 'worker')
+            .get();
+        for (final doc in snap.docs) {
+          final data = Map<String, dynamic>.from(doc.data());
+          data['id'] = doc.id;
+          final user = UserModel.fromJson(data);
+          addOrUpdateWorkerFromUser(user);
+        }
+      } catch (e) {
+        debugPrint('Could not fetch workers from Firestore: $e');
+      }
+    }
+
     // Simulate slight async response
     await Future.delayed(const Duration(milliseconds: 50));
 
@@ -688,5 +717,80 @@ class MockWorkerRepository implements WorkerRepository {
     if (idx == -1) return;
     _requests[idx] = _requests[idx].copyWith(status: BookingStatus.completed);
     _requestsStreamController.add(List.unmodifiable(_requests));
+  }
+
+  /// Registers/updates a worker in the local catalog so they appear in customer Explore & Category lists
+  void addOrUpdateWorkerFromUser(UserModel user) {
+    if (!user.isWorker) return;
+    final cat = user.category ?? 'Electrician';
+    String fallbackImg;
+    switch (cat.toLowerCase()) {
+      case 'electrician':
+        fallbackImg = 'assets/images/electrician.jpg';
+        break;
+      case 'plumber':
+        fallbackImg = 'assets/images/plumber.jpg';
+        break;
+      case 'cleaning':
+        fallbackImg = 'assets/images/cleaning.jpg';
+        break;
+      case 'carpenter':
+        fallbackImg = 'assets/images/carpenter.jpg';
+        break;
+      case 'painter':
+        fallbackImg = 'assets/images/painter.jpg';
+        break;
+      case 'ac repair':
+      case 'ac':
+        fallbackImg = 'assets/images/Ac.jpg';
+        break;
+      default:
+        fallbackImg = 'assets/images/worker1.png';
+    }
+
+    final isOther = cat.toLowerCase() == 'other';
+    final serviceTitle = isOther
+        ? 'General Repair & Services'
+        : '$cat Repair & Services';
+    final aboutText = (user.description != null && user.description!.trim().isNotEmpty)
+        ? user.description!.trim()
+        : isOther
+            ? 'Professional local technician providing reliable repair and maintenance services.'
+            : 'Professional $cat services with guaranteed quality and workmanship.';
+
+    final servicesList = isOther
+        ? ['General Repair', 'Inspection & Estimate', 'Maintenance']
+        : ['$cat Inspection', 'Standard Repair', 'Installation & Maintenance'];
+
+    final worker = WorkerModel(
+      id: user.id,
+      name: user.name,
+      businessName: user.name,
+      category: cat,
+      service: serviceTitle,
+      phone: user.phone,
+      whatsapp: user.phone,
+      location: user.shopAddress ?? user.address,
+      distanceKm: 1.0,
+      rating: 0.0,
+      reviewCount: 0,
+      experienceYears: user.experienceYears ?? 0,
+      jobsCompleted: 0,
+      visitingCharge: user.visitingCharge ?? 0,
+      isAvailable: true,
+      isVerified: true,
+      about: aboutText,
+      image: user.photoPath ?? fallbackImg,
+      pastWorks: const [],
+      reviews: const [],
+      servicesProvided: servicesList,
+    );
+
+    final idx = _workers.indexWhere((w) => w.id == user.id);
+    if (idx >= 0) {
+      _workers[idx] = worker;
+    } else {
+      _workers.insert(0, worker);
+    }
   }
 }

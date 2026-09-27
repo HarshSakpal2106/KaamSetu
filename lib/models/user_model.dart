@@ -14,6 +14,8 @@ class UserModel {
   final String? description;
   final String? category;      // e.g. "Electrician"
   final String? photoPath;     // asset or remote URL
+  final int? visitingCharge;   // in Rupees, e.g. 199 (0 or null = Free/On Call)
+  final int? experienceYears;  // in years, e.g. 5 (0 or null = New)
 
   const UserModel({
     required this.id,
@@ -27,6 +29,8 @@ class UserModel {
     this.description,
     this.category,
     this.photoPath,
+    this.visitingCharge,
+    this.experienceYears,
   });
 
   bool get isWorker => role == UserRole.worker;
@@ -43,6 +47,8 @@ class UserModel {
     String? description,
     String? category,
     String? photoPath,
+    int? visitingCharge,
+    int? experienceYears,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -56,6 +62,8 @@ class UserModel {
       description: description ?? this.description,
       category: category ?? this.category,
       photoPath: photoPath ?? this.photoPath,
+      visitingCharge: visitingCharge ?? this.visitingCharge,
+      experienceYears: experienceYears ?? this.experienceYears,
     );
   }
 
@@ -72,6 +80,8 @@ class UserModel {
       description: json['description'] as String?,
       category: json['category'] as String?,
       photoPath: json['photoPath'] as String?,
+      visitingCharge: (json['visitingCharge'] as num?)?.toInt(),
+      experienceYears: (json['experienceYears'] as num?)?.toInt(),
     );
   }
 
@@ -88,6 +98,8 @@ class UserModel {
       'description': description,
       'category': category,
       'photoPath': photoPath,
+      'visitingCharge': visitingCharge,
+      'experienceYears': experienceYears,
     };
   }
 }

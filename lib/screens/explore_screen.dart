@@ -357,25 +357,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           ],
                         ),
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _workers.length,
-                        itemBuilder: (context, index) {
-                          final worker = _workers[index];
-                          return WorkerCard(
-                            worker: worker,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => WorkerDetailScreen(
-                                    worker: worker,
+                    : RefreshIndicator(
+                        onRefresh: () async => _loadData(),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _workers.length,
+                          itemBuilder: (context, index) {
+                            final worker = _workers[index];
+                            return WorkerCard(
+                              worker: worker,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => WorkerDetailScreen(
+                                      worker: worker,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                        },
+                                );
+                              },
+                            );
+                          },
+                        ),
                       ),
           ),
         ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../models/service_request_model.dart';
 import '../models/worker_model.dart';
+import '../repositories/mock_worker_repository.dart';
 import '../services/launcher_service.dart';
 import '../widgets/booking_bottom_sheet.dart';
 
@@ -16,13 +18,21 @@ class WorkerDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          worker.businessName,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+    final repo = MockWorkerRepository();
+    repo.ensureFirestoreSync();
+
+    return StreamBuilder<List<ServiceRequestModel>>(
+      stream: repo.watchRequests(),
+      builder: (context, snapshot) {
+        final worker = repo.getWorkerByIdSync(this.worker.id) ?? this.worker;
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: Text(
+              worker.businessName,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -582,6 +592,8 @@ class WorkerDetailScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 

@@ -20,9 +20,155 @@ class MockWorkerRepository implements WorkerRepository {
 
   List<WorkerModel> _workers = [];
   List<ServiceRequestModel> _requests = [];
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _firestoreRequestsSub;
 
   MockWorkerRepository._internal() {
     _initWorkers();
+    _initDemoRequests();
+    _syncWorkersWithRequests();
+  }
+
+  void _initDemoRequests() {
+    _requests = [
+      const ServiceRequestModel(
+        id: 'KS-1001',
+        customerName: 'Rahul Mehta',
+        customerPhone: '+91 98200 11223',
+        customerAddress: 'Flat 302, Sai Galaxy, Vasai West',
+        serviceType: 'House Wiring & Repair',
+        workerId: 'ramesh',
+        workerName: 'Ramesh Electrical Services',
+        workerPhone: '+91 98765 43210',
+        workerLocation: 'Vasai - Virar, Maharashtra',
+        distance: '1.2 km away',
+        status: BookingStatus.completed,
+        date: '2 days ago',
+        visitingCharge: 199,
+        problemDescription: 'Main breaker tripping frequently.',
+        ratingGiven: 5.0,
+        reviewGiven: 'Very professional, arrived in 20 minutes and completed the wiring work properly.',
+      ),
+      const ServiceRequestModel(
+        id: 'KS-1002',
+        customerName: 'Amit Verma',
+        customerPhone: '+91 98200 44556',
+        customerAddress: 'Shop 12, Station Road, Vasai',
+        serviceType: 'Switchboard Repair',
+        workerId: 'ramesh',
+        workerName: 'Ramesh Electrical Services',
+        workerPhone: '+91 98765 43210',
+        workerLocation: 'Vasai - Virar, Maharashtra',
+        distance: '1.2 km away',
+        status: BookingStatus.completed,
+        date: '2 weeks ago',
+        visitingCharge: 199,
+        problemDescription: 'Short circuit near kitchen switch.',
+        ratingGiven: 4.5,
+        reviewGiven: 'Fixed the short circuit issue quickly. Highly recommended!',
+      ),
+      const ServiceRequestModel(
+        id: 'KS-1003',
+        customerName: 'Pooja K.',
+        customerPhone: '+91 98200 77889',
+        customerAddress: 'Sector 4, Vasai West',
+        serviceType: 'Fan & Light Installation',
+        workerId: 'wkr_demo_1',
+        workerName: 'Raju Electricals',
+        workerPhone: '+91 98765 43210',
+        workerLocation: 'Vasai West, Maharashtra',
+        distance: '1.0 km away',
+        status: BookingStatus.completed,
+        date: 'Yesterday',
+        visitingCharge: 199,
+        problemDescription: 'Need 2 ceiling fans installed.',
+        ratingGiven: 5.0,
+        reviewGiven: 'Neat and quick fan installation. Very polite behavior!',
+      ),
+    ];
+  }
+
+  void _syncWorkersWithRequests() {
+    for (int i = 0; i < _workers.length; i++) {
+      final worker = _workers[i];
+      final workerReqs = _requests.where((r) => r.workerId == worker.id).toList();
+
+      final completedReqs = workerReqs
+          .where((r) => r.status == BookingStatus.completed)
+          .toList();
+      final reviewedReqs = workerReqs
+          .where((r) => r.ratingGiven != null && r.ratingGiven! > 0)
+          .toList();
+
+      if (reviewedReqs.isNotEmpty || completedReqs.isNotEmpty) {
+        // Collect reviews from requests
+        final dynamicReviews = reviewedReqs.map((r) => ReviewModel(
+          reviewerName: r.customerName.isNotEmpty ? r.customerName : 'Verified Customer',
+          rating: r.ratingGiven!,
+          comment: (r.reviewGiven != null && r.reviewGiven!.trim().isNotEmpty)
+              ? r.reviewGiven!.trim()
+              : 'Work completed smoothly.',
+          date: r.date.isNotEmpty ? r.date : 'Recently',
+        )).toList();
+
+        // Merge with existing reviews if any, avoiding duplicate comment/reviewer pairs
+        final combinedReviews = <ReviewModel>[...dynamicReviews];
+        for (final existingRev in worker.reviews) {
+          final isDupe = combinedReviews.any(
+            (cr) => cr.comment == existingRev.comment && cr.reviewerName == existingRev.reviewerName,
+          );
+          if (!isDupe) {
+            combinedReviews.add(existingRev);
+          }
+        }
+
+        final double avgRating = combinedReviews.isEmpty
+            ? 0.0
+            : combinedReviews.map((r) => r.rating).reduce((a, b) => a + b) / combinedReviews.length;
+
+        final completedCount = completedReqs.length > worker.jobsCompleted
+            ? completedReqs.length
+            : worker.jobsCompleted;
+
+        _workers[i] = worker.copyWith(
+          reviews: combinedReviews,
+          reviewCount: combinedReviews.length,
+          rating: double.parse(avgRating.toStringAsFixed(1)),
+          jobsCompleted: completedCount,
+        );
+      }
+    }
+  }
+
+  void ensureFirestoreSync() {
+    if (!_isFirebaseReady || _firestoreRequestsSub != null) return;
+    try {
+      _firestoreRequestsSub = FirebaseFirestore.instance
+          .collection('service_requests')
+          .snapshots()
+          .listen((snap) {
+        for (final doc in snap.docs) {
+          try {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            final req = ServiceRequestModel.fromJson(data);
+            final idx = _requests.indexWhere((r) => r.id == req.id);
+            if (idx >= 0) {
+              _requests[idx] = req;
+            } else {
+              _requests.insert(0, req);
+            }
+          } catch (e) {
+            debugPrint('Error parsing request from Firestore: $e');
+          }
+        }
+        _syncWorkersWithRequests();
+        _requestsStreamController.add(List.unmodifiable(_requests));
+      }, onError: (err) {
+        debugPrint('Firestore service_requests listener error: $err');
+      });
+    } catch (e) {
+      debugPrint('Could not initialize Firestore sync: $e');
+    }
   }
 
   @override
@@ -89,6 +235,7 @@ class MockWorkerRepository implements WorkerRepository {
     double? minRating,
     String? sortBy,
   }) async {
+    ensureFirestoreSync();
     if (_isFirebaseReady) {
       try {
         final snap = await FirebaseFirestore.instance
@@ -101,6 +248,24 @@ class MockWorkerRepository implements WorkerRepository {
           final user = UserModel.fromJson(data);
           addOrUpdateWorkerFromUser(user);
         }
+
+        // Also fetch service requests to ensure work history and reviews are merged
+        final reqSnap = await FirebaseFirestore.instance
+            .collection('service_requests')
+            .get();
+        for (final doc in reqSnap.docs) {
+          final data = Map<String, dynamic>.from(doc.data());
+          data['id'] = doc.id;
+          final req = ServiceRequestModel.fromJson(data);
+          final idx = _requests.indexWhere((r) => r.id == req.id);
+          if (idx >= 0) {
+            _requests[idx] = req;
+          } else {
+            _requests.insert(0, req);
+          }
+        }
+        _syncWorkersWithRequests();
+        _requestsStreamController.add(List.unmodifiable(_requests));
       } catch (e) {
         debugPrint('Could not fetch workers from Firestore: $e');
       }
@@ -169,8 +334,17 @@ class MockWorkerRepository implements WorkerRepository {
     return _workers.isNotEmpty ? _workers.first : null;
   }
 
+  WorkerModel? getWorkerByIdSync(String id) {
+    try {
+      return _workers.firstWhere((w) => w.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Stream<List<ServiceRequestModel>> watchRequests() {
+    ensureFirestoreSync();
     // Immediately emit current state
     Future.microtask(() => _requestsStreamController.add(List.unmodifiable(_requests)));
     return _requestsStreamController.stream;
@@ -178,13 +352,26 @@ class MockWorkerRepository implements WorkerRepository {
 
   @override
   Future<List<ServiceRequestModel>> getRequests() async {
+    ensureFirestoreSync();
     return List.unmodifiable(_requests);
   }
 
   @override
   Future<void> createRequest(ServiceRequestModel request) async {
     _requests.insert(0, request);
+    _syncWorkersWithRequests();
     _requestsStreamController.add(List.unmodifiable(_requests));
+
+    if (_isFirebaseReady) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('service_requests')
+            .doc(request.id)
+            .set(request.toJson());
+      } catch (e) {
+        debugPrint('Could not save request to Firestore: $e');
+      }
+    }
   }
 
   @override
@@ -192,7 +379,19 @@ class MockWorkerRepository implements WorkerRepository {
     final index = _requests.indexWhere((r) => r.id == requestId);
     if (index != -1) {
       _requests[index] = _requests[index].copyWith(status: status);
+      _syncWorkersWithRequests();
       _requestsStreamController.add(List.unmodifiable(_requests));
+    }
+
+    if (_isFirebaseReady) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('service_requests')
+            .doc(requestId)
+            .update({'status': status.label});
+      } catch (e) {
+        debugPrint('Could not update request status in Firestore: $e');
+      }
     }
   }
 
@@ -203,33 +402,63 @@ class MockWorkerRepository implements WorkerRepository {
     required double rating,
     required String review,
   }) async {
-    // Update request
+    // 1. Update request in memory
     final reqIndex = _requests.indexWhere((r) => r.id == requestId);
     if (reqIndex != -1) {
       _requests[reqIndex] = _requests[reqIndex].copyWith(
         ratingGiven: rating,
         reviewGiven: review,
       );
-      _requestsStreamController.add(List.unmodifiable(_requests));
     }
 
-    // Add review to worker profile
-    final workerIndex = _workers.indexWhere((w) => w.id == workerId);
-    if (workerIndex != -1) {
-      final worker = _workers[workerIndex];
-      final newReview = ReviewModel(
-        reviewerName: 'You (Verified Customer)',
-        rating: rating,
-        comment: review,
-        date: 'Just now',
-      );
-      final updatedReviews = [newReview, ...worker.reviews];
-      _workers[workerIndex] = worker.copyWith(
-        reviews: updatedReviews,
-        reviewCount: worker.reviewCount + 1,
-      );
+    // 2. Synchronize worker stats (reviews, rating, reviewCount) in memory
+    _syncWorkersWithRequests();
+    _requestsStreamController.add(List.unmodifiable(_requests));
+
+    // 3. Persist to Firestore
+    if (_isFirebaseReady) {
+      try {
+        final db = FirebaseFirestore.instance;
+        final batch = db.batch();
+
+        // Update the rating/review on the request doc
+        batch.update(
+          db.collection('service_requests').doc(requestId),
+          {'ratingGiven': rating, 'reviewGiven': review},
+        );
+
+        // Save the review as a sub-document under the worker
+        final reviewDoc = db
+            .collection('workers')
+            .doc(workerId)
+            .collection('reviews')
+            .doc(requestId);
+        batch.set(reviewDoc, {
+          'requestId': requestId,
+          'reviewerName': reqIndex != -1 ? _requests[reqIndex].customerName : 'Verified Customer',
+          'rating': rating,
+          'comment': review,
+          'date': DateTime.now().toIso8601String(),
+        });
+
+        // Also update users/{workerId} with new rating/reviewCount if worker document exists
+        final worker = getWorkerByIdSync(workerId);
+        if (worker != null) {
+          final userDocRef = db.collection('users').doc(workerId);
+          batch.set(userDocRef, {
+            'rating': worker.rating,
+            'reviewCount': worker.reviewCount,
+            'jobsCompleted': worker.jobsCompleted,
+          }, SetOptions(merge: true));
+        }
+
+        await batch.commit();
+      } catch (e) {
+        debugPrint('Could not save review to Firestore: $e');
+      }
     }
   }
+
 
   @override
   Future<void> updateWorkerProfile(WorkerModel updatedWorker) async {
@@ -705,18 +934,12 @@ class MockWorkerRepository implements WorkerRepository {
 
   /// Worker accepts a pending request → status becomes accepted
   void acceptRequest(String requestId) {
-    final idx = _requests.indexWhere((r) => r.id == requestId);
-    if (idx == -1) return;
-    _requests[idx] = _requests[idx].copyWith(status: BookingStatus.accepted);
-    _requestsStreamController.add(List.unmodifiable(_requests));
+    updateRequestStatus(requestId, BookingStatus.accepted);
   }
 
   /// Worker marks a job as completed → status becomes completed
   void markAsCompleted(String requestId) {
-    final idx = _requests.indexWhere((r) => r.id == requestId);
-    if (idx == -1) return;
-    _requests[idx] = _requests[idx].copyWith(status: BookingStatus.completed);
-    _requestsStreamController.add(List.unmodifiable(_requests));
+    updateRequestStatus(requestId, BookingStatus.completed);
   }
 
   /// Registers/updates a worker in the local catalog so they appear in customer Explore & Category lists
@@ -792,5 +1015,6 @@ class MockWorkerRepository implements WorkerRepository {
     } else {
       _workers.insert(0, worker);
     }
+    _syncWorkersWithRequests();
   }
 }

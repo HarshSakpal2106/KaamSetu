@@ -25,7 +25,9 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   }
 
   void _loadWorker() async {
-    final worker = await _repository.getWorkerById('ramesh');
+    final user = AuthService().currentUser.value;
+    final workerId = (user != null && user.isWorker) ? user.id : 'ramesh';
+    final worker = await _repository.getWorkerById(workerId);
     if (mounted) {
       setState(() {
         _currentWorker = worker;
@@ -258,13 +260,22 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
             StreamBuilder<List<ServiceRequestModel>>(
               stream: _repository.watchRequests(),
               builder: (context, snapshot) {
-                final requests = snapshot.data ?? const <ServiceRequestModel>[];
-                final completedCount = requests
+                final currentId = _currentWorker?.id ?? AuthService().currentUser.value?.id ?? 'ramesh';
+                final allRequests = snapshot.data ?? const <ServiceRequestModel>[];
+                final workerRequests = allRequests.where((r) => r.workerId == currentId).toList();
+                final completedCount = workerRequests
                     .where((r) => r.status == BookingStatus.completed)
                     .length;
-                final weekEarnings = requests
+                final weekEarnings = workerRequests
                     .where((r) => r.status == BookingStatus.completed)
                     .fold<int>(0, (sum, r) => sum + r.visitingCharge);
+                final reviews = workerRequests
+                    .where((r) => r.ratingGiven != null && r.ratingGiven! > 0)
+                    .toList();
+                final avgRatingStr = reviews.isEmpty
+                    ? (_currentWorker != null && _currentWorker!.rating > 0 ? '${_currentWorker!.rating} ⭐' : '—')
+                    : '${(reviews.map((r) => r.ratingGiven!).reduce((a, b) => a + b) / reviews.length).toStringAsFixed(1)} ⭐';
+
                 return Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -274,7 +285,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                       _buildStatTile('$completedCount', 'Completed', Icons.check_circle_outline),
                       const SizedBox(width: 8),
                       _buildStatTile(
-                        '${_currentWorker?.rating ?? 0} ⭐',
+                        avgRatingStr,
                         'Rating',
                         Icons.star_outline,
                       ),
@@ -320,11 +331,19 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final requests = snapshot.data!;
+                final currentId = _currentWorker?.id ?? AuthService().currentUser.value?.id ?? 'ramesh';
+                final requests = snapshot.data!
+                    .where((r) => r.workerId == currentId)
+                    .toList();
                 if (requests.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.all(32),
-                    child: Text('No job requests at the moment.'),
+                    child: Center(
+                      child: Text(
+                        'No job requests at the moment.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
                   );
                 }
 

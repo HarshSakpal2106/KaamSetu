@@ -165,25 +165,15 @@ class _AuthScreenState extends State<AuthScreen>
               children: [
                 // Brand Header with custom logo
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(_selectedRole == null ? 24 : 20),
                   child: Image.asset(
                     'assets/images/app_logo.png',
-                    width: 110,
-                    height: 110,
+                    width: _selectedRole == null ? 160 : 110,
+                    height: _selectedRole == null ? 160 : 110,
                     fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'KaamSetu',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 10),
                 const Text(
                   'Your Trusted Local Service Network',
                   style: TextStyle(

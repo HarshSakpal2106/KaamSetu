@@ -9,8 +9,9 @@ class WorkerJobsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final workerId = AuthService().currentUser.value?.id ?? '';
+    final workerId = AuthService().currentUser.value?.id ?? 'ramesh';
     final repo = MockWorkerRepository();
+    repo.ensureFirestoreSync();
 
     return Scaffold(
       backgroundColor: AppColors.background,

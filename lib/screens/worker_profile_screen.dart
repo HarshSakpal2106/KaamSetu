@@ -17,184 +17,208 @@ class WorkerProfileScreen extends StatelessWidget {
         if (user == null) return const SizedBox.shrink();
         final workerId = user.id;
         final repo = MockWorkerRepository();
-        final allJobs = repo.getRequestsForWorker(workerId);
-        final completed =
-            allJobs.where((r) => r.status == BookingStatus.completed).toList();
-        final reviews = completed.where((r) => r.ratingGiven != null).toList();
-        final avgRating = reviews.isEmpty
-            ? 0.0
-            : reviews.map((r) => r.ratingGiven!).reduce((a, b) => a + b) /
-                reviews.length;
+        repo.ensureFirestoreSync();
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: const Text('My Profile'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => _showEditSheet(context, user),
-                tooltip: 'Edit Profile',
+        return StreamBuilder<List<ServiceRequestModel>>(
+          stream: repo.watchRequests(),
+          builder: (context, snapshot) {
+            final allJobs = repo.getRequestsForWorker(workerId);
+            final completed =
+                allJobs.where((r) => r.status == BookingStatus.completed).toList();
+            final reviews = completed.where((r) => r.ratingGiven != null).toList();
+            final avgRating = reviews.isEmpty
+                ? 0.0
+                : reviews.map((r) => r.ratingGiven!).reduce((a, b) => a + b) /
+                    reviews.length;
+
+            return Scaffold(
+              backgroundColor: AppColors.background,
+              appBar: AppBar(
+                title: const Text('My Profile'),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _showEditSheet(context, user),
+                    tooltip: 'Edit Profile',
+                  ),
+                ],
               ),
-            ],
-          ),
-          body: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // ── Profile card ──────────────────────────────
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              body: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  // ── Profile card ──────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Avatar
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(36),
-                            border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.3),
-                                width: 2),
-                          ),
-                          child: user.photoPath != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(36),
-                                  child: Image.asset(
-                                    user.photoPath!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (ctx, err, stack) =>
-                                        _avatarFallback(user.name),
-                                  ),
-                                )
-                              : _avatarFallback(user.name),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user.name,
-                                style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary),
+                        Row(
+                          children: [
+                            // Avatar
+                            Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(36),
+                                border: Border.all(
+                                    color: AppColors.primary.withValues(alpha: 0.3),
+                                    width: 2),
                               ),
-                              if (user.category != null) ...[
-                                const SizedBox(height: 3),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.build_outlined,
-                                        size: 13, color: AppColors.textMuted),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      user.category!,
-                                      style: const TextStyle(
-                                          fontSize: 13,
-                                          color: AppColors.textSecondary),
+                              child: user.photoPath != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(36),
+                                      child: Image.asset(
+                                        user.photoPath!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (ctx, err, stack) =>
+                                            _avatarFallback(user.name),
+                                      ),
+                                    )
+                                  : _avatarFallback(user.name),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user.name,
+                                    style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary),
+                                  ),
+                                  if (user.category != null) ...[
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.build_outlined,
+                                            size: 13, color: AppColors.textMuted),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          user.category!,
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.textSecondary),
+                                        ),
+                                      ],
                                     ),
                                   ],
-                                ),
-                              ],
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  const Icon(Icons.star,
-                                      size: 14, color: AppColors.star),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    reviews.isEmpty
-                                        ? 'No ratings yet'
-                                        : '${avgRating.toStringAsFixed(1)}  (${reviews.length} review${reviews.length > 1 ? 's' : ''})',
-                                    style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star,
+                                          size: 14, color: AppColors.star),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        reviews.isEmpty
+                                            ? 'No ratings yet'
+                                            : '${avgRating.toStringAsFixed(1)}  (${reviews.length} review${reviews.length > 1 ? 's' : ''})',
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
+
+                        const SizedBox(height: 16),
+                        const Divider(height: 1, color: AppColors.divider),
+                        const SizedBox(height: 14),
+
+                        _infoRow(Icons.phone_outlined, user.phone),
+                        if (user.shopAddress != null)
+                          _infoRow(Icons.store_outlined, user.shopAddress!),
+                        if (user.workerHours != null)
+                          _infoRow(Icons.access_time_outlined, user.workerHours!),
+                        if (user.description != null &&
+                            user.description!.isNotEmpty)
+                          _infoRow(
+                              Icons.notes_outlined, user.description!,
+                              italic: true),
                       ],
                     ),
+                  ),
 
-                    const SizedBox(height: 16),
-                    const Divider(height: 1, color: AppColors.divider),
-                    const SizedBox(height: 14),
+                  const SizedBox(height: 20),
 
-                    _infoRow(Icons.phone_outlined, user.phone),
-                    if (user.shopAddress != null)
-                      _infoRow(Icons.store_outlined, user.shopAddress!),
-                    if (user.workerHours != null)
-                      _infoRow(Icons.access_time_outlined, user.workerHours!),
-                    if (user.description != null &&
-                        user.description!.isNotEmpty)
-                      _infoRow(
-                          Icons.notes_outlined, user.description!,
-                          italic: true),
+                  // ── Stats row ────────────────────────────────
+                  Row(
+                    children: [
+                      _statBox('Total Jobs', allJobs.length.toString()),
+                      const SizedBox(width: 10),
+                      _statBox('Completed', completed.length.toString()),
+                      const SizedBox(width: 10),
+                      _statBox(
+                          'Rating',
+                          reviews.isEmpty
+                              ? '—'
+                              : avgRating.toStringAsFixed(1)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Past completed work ──────────────────────
+                  const Text(
+                    'Past Completed Work',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 10),
+                  if (completed.isEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No completed jobs yet',
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ] else ...[
+                    ...completed.map((job) => _PastJobCard(job: job)),
+                    const SizedBox(height: 20),
                   ],
-                ),
-              ),
 
-              const SizedBox(height: 20),
-
-              // ── Stats row ────────────────────────────────
-              Row(
-                children: [
-                  _statBox('Total Jobs', allJobs.length.toString()),
-                  const SizedBox(width: 10),
-                  _statBox('Completed', completed.length.toString()),
-                  const SizedBox(width: 10),
-                  _statBox(
-                      'Rating',
-                      reviews.isEmpty
-                          ? '—'
-                          : avgRating.toStringAsFixed(1)),
+                  // ── Logout ────────────────────────────────────
+                  OutlinedButton.icon(
+                    onPressed: () => _confirmLogout(context),
+                    icon: const Icon(Icons.logout, color: Colors.red, size: 18),
+                    label: const Text('Log Out',
+                        style: TextStyle(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      minimumSize: const Size(double.infinity, 0),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
-
-              const SizedBox(height: 20),
-
-              // ── Past completed work ──────────────────────
-              if (completed.isNotEmpty) ...[
-                const Text(
-                  'Past Completed Work',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 10),
-                ...completed.map((job) => _PastJobCard(job: job)),
-                const SizedBox(height: 20),
-              ],
-
-              // ── Logout ────────────────────────────────────
-              OutlinedButton.icon(
-                onPressed: () => _confirmLogout(context),
-                icon: const Icon(Icons.logout, color: Colors.red, size: 18),
-                label: const Text('Log Out',
-                    style: TextStyle(color: Colors.red)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  minimumSize: const Size(double.infinity, 0),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
     );

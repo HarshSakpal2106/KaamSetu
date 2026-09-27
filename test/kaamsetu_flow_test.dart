@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kaamsetu/main.dart';
 import 'package:kaamsetu/models/service_request_model.dart';
+import 'package:kaamsetu/models/user_model.dart';
 import 'package:kaamsetu/repositories/mock_worker_repository.dart';
 import 'package:kaamsetu/services/auth_service.dart';
 
@@ -130,5 +131,68 @@ void main() {
       completedRequests.firstWhere((r) => r.id == 'KS-test-lifecycle').status,
       BookingStatus.completed,
     );
+  });
+
+  testWidgets('Worker review submission and rating synchronization test', (WidgetTester tester) async {
+    final repository = MockWorkerRepository();
+
+    // 1. Create a new worker
+    const newWorkerUser = UserModel(
+      id: 'wkr_test_sync',
+      name: 'Santosh Plumber',
+      phone: '+91 99999 88888',
+      address: 'Vasai West',
+      email: 'santosh@test.com',
+      role: UserRole.worker,
+      category: 'Plumber',
+      visitingCharge: 250,
+      experienceYears: 4,
+    );
+    repository.addOrUpdateWorkerFromUser(newWorkerUser);
+
+    var worker = repository.getWorkerByIdSync('wkr_test_sync');
+    expect(worker, isNotNull);
+    expect(worker!.rating, 0.0);
+    expect(worker.reviewCount, 0);
+
+    // 2. Create a request for this worker
+    const req = ServiceRequestModel(
+      id: 'KS-test-review-sync',
+      customerName: 'Anjali Verma',
+      customerPhone: '+91 98888 77777',
+      customerAddress: 'Flat 101, Vasai',
+      serviceType: 'Tap Leakage Fix',
+      workerId: 'wkr_test_sync',
+      workerName: 'Santosh Plumber',
+      workerPhone: '+91 99999 88888',
+      workerLocation: 'Vasai West',
+      distance: '1.0 km away',
+      status: BookingStatus.completed,
+      date: 'Today',
+      visitingCharge: 250,
+    );
+    await repository.createRequest(req);
+
+    // 3. Submit review from customer
+    await repository.submitReview(
+      requestId: 'KS-test-review-sync',
+      workerId: 'wkr_test_sync',
+      rating: 5.0,
+      review: 'Excellent plumbing work! Fixed in 15 mins.',
+    );
+
+    // 4. Verify worker's rating and review are live and synchronized
+    worker = repository.getWorkerByIdSync('wkr_test_sync');
+    expect(worker!.rating, 5.0);
+    expect(worker.reviewCount, 1);
+    expect(worker.reviews.first.comment, 'Excellent plumbing work! Fixed in 15 mins.');
+    expect(worker.reviews.first.reviewerName, 'Anjali Verma');
+
+    // 5. Verify work history has this completed job
+    final workerJobs = repository.getRequestsForWorker('wkr_test_sync');
+    expect(workerJobs.length, 1);
+    expect(workerJobs.first.status, BookingStatus.completed);
+    expect(workerJobs.first.ratingGiven, 5.0);
+    expect(workerJobs.first.reviewGiven, 'Excellent plumbing work! Fixed in 15 mins.');
   });
 }

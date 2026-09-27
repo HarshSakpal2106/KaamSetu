@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../constants/app_colors.dart';
 import '../models/service_request_model.dart';
 import '../models/worker_model.dart';
 import '../repositories/mock_worker_repository.dart';
+import '../services/auth_service.dart';
+import 'package:intl/intl.dart';
 
 class BookingBottomSheet extends StatefulWidget {
   final WorkerModel worker;
@@ -37,9 +38,9 @@ class BookingBottomSheet extends StatefulWidget {
 
 class _BookingBottomSheetState extends State<BookingBottomSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'Harshwardhan');
-  final _phoneController = TextEditingController(text: '+91 98765 00001');
-  final _addressController = TextEditingController(text: 'Flat 402, Sai Residency, Vasai West');
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _addressController;
   final _notesController = TextEditingController();
 
   late String _selectedService;
@@ -48,6 +49,11 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
   @override
   void initState() {
     super.initState();
+    // Pre-fill from logged-in user profile
+    final user = AuthService().currentUser.value;
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+    _addressController = TextEditingController(text: user?.address ?? '');
     _selectedService = widget.worker.servicesProvided.isNotEmpty
         ? widget.worker.servicesProvided.first
         : widget.worker.service;
@@ -92,9 +98,8 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
     if (!mounted) return;
 
     setState(() => _isSubmitting = false);
-    Navigator.pop(context); // Close bottom sheet
+    Navigator.pop(context);
 
-    // Show confirmation dialog
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -132,7 +137,8 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   Text('Service: ${newRequest.serviceType}',
                       style: const TextStyle(fontSize: 12)),
                   const SizedBox(height: 4),
-                  Text('Visiting Fee: ₹${newRequest.visitingCharge} (Pay on visit)',
+                  Text(
+                      'Visiting Fee: ₹${newRequest.visitingCharge} (Pay on visit)',
                       style: const TextStyle(
                           fontSize: 12, color: AppColors.textSecondary)),
                 ],
@@ -231,7 +237,8 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
 
                 // Visiting Charge Notice
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(8),
@@ -239,7 +246,8 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, size: 18, color: AppColors.primaryLight),
+                      const Icon(Icons.info_outline,
+                          size: 18, color: AppColors.primaryLight),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -262,10 +270,13 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   controller: _nameController,
                   decoration: InputDecoration(
                     labelText: 'Your Full Name',
+                    hintText: 'e.g. Rahul Sharma',
                     prefixIcon: const Icon(Icons.person_outline),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border:
+                        OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter your name' : null,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Please enter your name' : null,
                 ),
 
                 const SizedBox(height: 12),
@@ -276,10 +287,13 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
                     labelText: 'Phone Number',
+                    hintText: 'e.g. +91 98765 43210',
                     prefixIcon: const Icon(Icons.phone_outlined),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border:
+                        OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter phone number' : null,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Please enter phone number' : null,
                 ),
 
                 const SizedBox(height: 12),
@@ -290,10 +304,13 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   maxLines: 2,
                   decoration: InputDecoration(
                     labelText: 'Service Address / Landmark',
+                    hintText: 'e.g. Flat 3, Galaxy Apts, Vasai West',
                     prefixIcon: const Icon(Icons.location_on_outlined),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border:
+                        OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter address' : null,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Please enter address' : null,
                 ),
 
                 const SizedBox(height: 12),
@@ -305,7 +322,8 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   decoration: InputDecoration(
                     labelText: 'Select Required Service',
                     prefixIcon: const Icon(Icons.build_circle_outlined),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border:
+                        OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   items: widget.worker.servicesProvided.map((service) {
                     return DropdownMenuItem<String>(
@@ -326,9 +344,10 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   maxLines: 2,
                   decoration: InputDecoration(
                     labelText: 'Problem Description (Optional)',
-                    hintText: 'e.g. Switch sparked, water dripping continuously...',
+                    hintText: 'e.g. Switch sparked, water dripping from tap...',
                     prefixIcon: const Icon(Icons.notes_outlined),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border:
+                        OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
 

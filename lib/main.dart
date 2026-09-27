@@ -7,7 +7,7 @@ import 'firebase_options.dart';
 import 'models/user_model.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_navigation_screen.dart';
-import 'screens/worker_dashboard_screen.dart';
+import 'screens/worker_main_navigation_screen.dart';
 import 'services/auth_service.dart';
 
 Future<void> main() async {
@@ -81,7 +81,7 @@ class KaamSetuApp extends StatelessWidget {
         valueListenable: AuthService().currentUser,
         builder: (context, user, _) {
           if (user == null) return const AuthScreen();
-          if (user.isWorker) return const WorkerDashboardScreen();
+          if (user.isWorker) return const WorkerMainNavigationScreen();
           return const MainNavigationScreen();
         },
       ),

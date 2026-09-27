@@ -6,16 +6,36 @@ import 'package:kaamsetu/repositories/mock_worker_repository.dart';
 import 'package:kaamsetu/services/auth_service.dart';
 
 void main() {
-  setUp(() {
-    AuthService().logout();
+  setUp(() async {
+    await AuthService().logout();
   });
 
   testWidgets('KaamSetu full user journey test', (WidgetTester tester) async {
     await tester.pumpWidget(const KaamSetuApp());
     await tester.pumpAndSettle();
 
+    // New flow: first pick role, then log in
     expect(find.text('Customer'), findsOneWidget);
+    expect(find.text('Worker'), findsOneWidget);
+
+    // Tap Customer role card
+    await tester.tap(find.text('Customer'));
+    await tester.pumpAndSettle();
+
+    // Now the login form is visible
+    expect(find.text('Log In'), findsWidgets);
+
+    // Fill in login credentials (phone and password)
+    await tester.enterText(
+        find.byType(TextFormField).at(0), '+91 98765 00001');
+    await tester.enterText(
+        find.byType(TextFormField).at(1), 'password123');
+    await tester.pumpAndSettle();
+
+    // Tap Log In button
     await tester.tap(find.widgetWithText(ElevatedButton, 'Log In'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
     expect(find.text('KaamSetu'), findsWidgets);
@@ -79,17 +99,36 @@ void main() {
 
   testWidgets('Worker dashboard lifecycle status test', (WidgetTester tester) async {
     final repository = MockWorkerRepository();
-    final initialRequests = await repository.getRequests();
-    final firstId = initialRequests.first.id;
+    await repository.createRequest(
+      const ServiceRequestModel(
+        id: 'KS-test-lifecycle',
+        customerName: 'Test Customer',
+        customerPhone: '+91 90000 00000',
+        customerAddress: 'Test Address',
+        serviceType: 'Electrical Repair',
+        workerId: 'ramesh',
+        workerName: 'Ramesh Electrical Services',
+        workerPhone: '+91 98765 43210',
+        workerLocation: 'Vasai - Virar, Maharashtra',
+        distance: '1.2 km away',
+        status: BookingStatus.accepted,
+        date: '28 Sep 2026',
+        visitingCharge: 199,
+      ),
+    );
 
-    // Advance status to inProgress
-    await repository.updateRequestStatus(firstId, BookingStatus.inProgress);
+    await repository.updateRequestStatus('KS-test-lifecycle', BookingStatus.inProgress);
     final updatedRequests = await repository.getRequests();
-    expect(updatedRequests.first.status, BookingStatus.inProgress);
+    expect(
+      updatedRequests.firstWhere((r) => r.id == 'KS-test-lifecycle').status,
+      BookingStatus.inProgress,
+    );
 
-    // Complete the job
-    await repository.updateRequestStatus(firstId, BookingStatus.completed);
+    await repository.updateRequestStatus('KS-test-lifecycle', BookingStatus.completed);
     final completedRequests = await repository.getRequests();
-    expect(completedRequests.first.status, BookingStatus.completed);
+    expect(
+      completedRequests.firstWhere((r) => r.id == 'KS-test-lifecycle').status,
+      BookingStatus.completed,
+    );
   });
 }

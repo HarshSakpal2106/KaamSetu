@@ -347,53 +347,58 @@ class _BookingsScreenState extends State<BookingsScreen>
 
             const SizedBox(height: 12),
 
-            // Status description
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: request.status.color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: request.status.color.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 14, color: request.status.color),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _getStatusDescription(request.status),
-                      style: TextStyle(fontSize: 12, color: request.status.color),
+            // Work Completed banner — only shown when done
+            if (request.status == BookingStatus.completed) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.statusCompleted.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: AppColors.statusCompleted.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle_outline,
+                        size: 16, color: AppColors.statusCompleted),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Work Completed',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.statusCompleted),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 10),
+            ],
 
-            const SizedBox(height: 12),
             const Divider(height: 1, color: AppColors.divider),
             const SizedBox(height: 12),
 
-            // Action Buttons
+            // Call / WhatsApp — active jobs only
             if (request.status != BookingStatus.completed &&
                 request.status != BookingStatus.cancelled) ...[
               Row(
                 children: [
-                  // Call Worker
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => LauncherService.makePhoneCall(request.workerPhone),
+                      onPressed: () =>
+                          LauncherService.makePhoneCall(request.workerPhone),
                       icon: const Icon(Icons.call, size: 16, color: AppColors.call),
                       label: const Text('Call Worker',
                           style: TextStyle(fontSize: 12, color: AppColors.call)),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: AppColors.call),
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // WhatsApp Worker
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => LauncherService.openWhatsApp(
@@ -409,29 +414,30 @@ class _BookingsScreenState extends State<BookingsScreen>
                         backgroundColor: AppColors.whatsApp,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
                   ),
                 ],
               ),
-            ] else if (request.status == BookingStatus.completed) ...[
+            ],
+
+            // Rating — only for completed jobs
+            if (request.status == BookingStatus.completed) ...[
               if (request.ratingGiven != null) ...[
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: AppColors.star, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          'You rated: ${request.ratingGiven!.toStringAsFixed(1)} ⭐',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ],
+                    const Icon(Icons.star, color: AppColors.star, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      'You rated: ${request.ratingGiven!.toStringAsFixed(1)} ⭐',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 13),
                     ),
-                    if (request.reviewGiven != null)
-                      Flexible(
+                    if (request.reviewGiven != null) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
                         child: Text(
                           '"${request.reviewGiven!}"',
                           style: const TextStyle(
@@ -443,6 +449,7 @@ class _BookingsScreenState extends State<BookingsScreen>
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                    ],
                   ],
                 ),
               ] else ...[
@@ -452,7 +459,8 @@ class _BookingsScreenState extends State<BookingsScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.amber.shade600,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
                     onPressed: () => _showRatingDialog(request),
                     icon: const Icon(Icons.star_rate_rounded, size: 18),
@@ -465,20 +473,5 @@ class _BookingsScreenState extends State<BookingsScreen>
         ),
       ),
     );
-  }
-
-  String _getStatusDescription(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.requested:
-        return 'Request sent. Waiting for worker to confirm.';
-      case BookingStatus.accepted:
-        return 'Worker accepted your request and is on the way.';
-      case BookingStatus.inProgress:
-        return 'Repair / service work is currently in progress.';
-      case BookingStatus.completed:
-        return 'Work finished! Worker marked service as complete.';
-      case BookingStatus.cancelled:
-        return 'This service request was cancelled.';
-    }
   }
 }

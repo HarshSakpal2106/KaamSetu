@@ -255,17 +255,33 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
             ),
 
             // Performance Statistics
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  _buildStatTile('₹4,850', 'This Week', Icons.currency_rupee),
-                  const SizedBox(width: 8),
-                  _buildStatTile('${_currentWorker?.jobsCompleted ?? 120}', 'Completed', Icons.check_circle_outline),
-                  const SizedBox(width: 8),
-                  _buildStatTile('${_currentWorker?.rating ?? 4.8} ⭐', 'Rating', Icons.star_outline),
-                ],
-              ),
+            StreamBuilder<List<ServiceRequestModel>>(
+              stream: _repository.watchRequests(),
+              builder: (context, snapshot) {
+                final requests = snapshot.data ?? const <ServiceRequestModel>[];
+                final completedCount = requests
+                    .where((r) => r.status == BookingStatus.completed)
+                    .length;
+                final weekEarnings = requests
+                    .where((r) => r.status == BookingStatus.completed)
+                    .fold<int>(0, (sum, r) => sum + r.visitingCharge);
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      _buildStatTile('₹$weekEarnings', 'This Week', Icons.currency_rupee),
+                      const SizedBox(width: 8),
+                      _buildStatTile('$completedCount', 'Completed', Icons.check_circle_outline),
+                      const SizedBox(width: 8),
+                      _buildStatTile(
+                        '${_currentWorker?.rating ?? 0} ⭐',
+                        'Rating',
+                        Icons.star_outline,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
 
             // Incoming Bookings Section

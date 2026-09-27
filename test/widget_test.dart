@@ -3,8 +3,8 @@ import 'package:kaamsetu/main.dart';
 import 'package:kaamsetu/services/auth_service.dart';
 
 void main() {
-  setUp(() {
-    AuthService().logout();
+  setUp(() async {
+    await AuthService().logout();
   });
 
   testWidgets('KaamSetu app loads smoke test', (WidgetTester tester) async {

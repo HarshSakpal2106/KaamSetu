@@ -155,10 +155,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   // Rating Filter
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Rating 4.5 & Above Only'),
-                    value: _minRating == 4.5,
+                    title: const Text('Rating 4.0 & Above Only'),
+                    value: _minRating == 4.0,
                     onChanged: (val) {
-                      setModalState(() => _minRating = (val == true) ? 4.5 : null);
+                      setModalState(() => _minRating = (val == true) ? 4.0 : null);
                     },
                   ),
 

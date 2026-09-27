@@ -3,6 +3,7 @@ import '../config/app_config.dart';
 import '../constants/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -158,9 +159,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              _authService.logout();
+              await _authService.logout();
+              if (!mounted) return;
+              Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const AuthScreen()),
+                (route) => false,
+              );
             },
             child: const Text('Log Out'),
           ),
@@ -329,6 +335,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               context: context,
                               applicationName: AppConfig.appName,
                               applicationVersion: '1.0.0',
+                              applicationIcon: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/app_logo.png',
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
                               applicationLegalese: AppConfig.copyright,
                               children: const [
                                 SizedBox(height: 8),

@@ -19,7 +19,6 @@ class MockWorkerRepository implements WorkerRepository {
 
   MockWorkerRepository._internal() {
     _initWorkers();
-    _initSampleRequests();
   }
 
   @override
@@ -663,61 +662,6 @@ class MockWorkerRepository implements WorkerRepository {
           ReviewModel(reviewerName: 'Gaurav B.', rating: 4.5, comment: 'Quick turnaround on a hot summer afternoon.', date: '4 days ago'),
         ],
         servicesProvided: ['Emergency Cooling Fix', 'Condenser Replacement', 'Filter Cleaning', 'Thermostat Fix'],
-      ),
-    ];
-  }
-
-  void _initSampleRequests() {
-    _requests = [
-      const ServiceRequestModel(
-        id: 'KS-17274401',
-        customerName: 'Harshwardhan',
-        customerPhone: '+91 98765 00001',
-        customerAddress: 'Flat 402, Sai Residency, Station Road, Vasai',
-        serviceType: 'Electrical Repair',
-        workerId: 'ramesh',
-        workerName: 'Ramesh Electrical Services',
-        workerPhone: '+91 98765 43210',
-        workerLocation: 'Vasai - Virar, Maharashtra',
-        distance: '1.2 km away',
-        status: BookingStatus.accepted,
-        date: '27 Sep 2026',
-        visitingCharge: 199,
-        problemDescription: 'Main hall ceiling fan not working and switch sparked.',
-      ),
-      const ServiceRequestModel(
-        id: 'KS-17273180',
-        customerName: 'Harshwardhan',
-        customerPhone: '+91 98765 00001',
-        customerAddress: 'Flat 402, Sai Residency, Station Road, Vasai',
-        serviceType: 'Tap & Faucet Repair',
-        workerId: 'suresh',
-        workerName: 'Suresh Plumbing Services',
-        workerPhone: '+91 98765 43214',
-        workerLocation: 'Vasai - Virar, Maharashtra',
-        distance: '2.4 km away',
-        status: BookingStatus.inProgress,
-        date: '26 Sep 2026',
-        visitingCharge: 199,
-        problemDescription: 'Continuous water drip from bathroom shower mixer.',
-      ),
-      const ServiceRequestModel(
-        id: 'KS-17268800',
-        customerName: 'Harshwardhan',
-        customerPhone: '+91 98765 00001',
-        customerAddress: 'Flat 402, Sai Residency, Station Road, Vasai',
-        serviceType: 'Power Jet AC Service',
-        workerId: 'cooltech',
-        workerName: 'CoolTech AC Services',
-        workerPhone: '+91 98765 43230',
-        workerLocation: 'Vasai - Virar, Maharashtra',
-        distance: '1.4 km away',
-        status: BookingStatus.completed,
-        date: '21 Sep 2026',
-        visitingCharge: 299,
-        problemDescription: 'AC blowing normal air instead of cool air.',
-        ratingGiven: 5.0,
-        reviewGiven: 'Awesome service! Jet wash cleaned all the dust and cooling was restored immediately.',
       ),
     ];
   }

@@ -444,66 +444,94 @@ class WorkerDetailScreen extends StatelessWidget {
             // Ratings & Reviews
             _buildSectionContainer(
               title: 'Customer Ratings & Reviews',
-              child: Column(
-                children: worker.reviews.map((rev) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: worker.reviews.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Column(
                           children: [
+                            Icon(Icons.rate_review_outlined,
+                                size: 36, color: AppColors.textMuted),
+                            SizedBox(height: 8),
                             Text(
-                              rev.reviewerName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                              'No reviews yet',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
                               ),
                             ),
-                            Row(
-                              children: [
-                                const Icon(Icons.star,
-                                    size: 14, color: AppColors.star),
-                                const SizedBox(width: 2),
-                                Text(
-                                  rev.rating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            SizedBox(height: 4),
+                            Text(
+                              'Be the first to review this worker!',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppColors.textMuted),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          rev.comment,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
+                      ),
+                    )
+                  : Column(
+                      children: worker.reviews.map((rev) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.border),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          rev.date,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textMuted,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    rev.reviewerName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star,
+                                          size: 14, color: AppColors.star),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        rev.rating.toStringAsFixed(1),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                rev.comment,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                rev.date,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        );
+                      }).toList(),
                     ),
-                  );
-                }).toList(),
-              ),
             ),
 
             const SizedBox(height: 90), // Bottom padding for sticky button

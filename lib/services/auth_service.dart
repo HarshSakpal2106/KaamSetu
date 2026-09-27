@@ -115,6 +115,8 @@ class AuthService {
     String? workerHours,
     String? description,
     String? category,
+    int? visitingCharge,
+    int? experienceYears,
   }) async {
     final existing = currentUser.value;
     if (existing == null) return;
@@ -128,6 +130,8 @@ class AuthService {
       workerHours: workerHours,
       description: description,
       category: category,
+      visitingCharge: visitingCharge,
+      experienceYears: experienceYears,
     );
 
     if (currentUser.value!.isWorker) {

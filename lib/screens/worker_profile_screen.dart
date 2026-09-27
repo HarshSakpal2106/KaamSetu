@@ -275,6 +275,14 @@ class WorkerProfileScreen extends StatelessWidget {
     final shopCtrl = TextEditingController(text: user.shopAddress ?? '');
     final hoursCtrl = TextEditingController(text: user.workerHours ?? '');
     final descCtrl = TextEditingController(text: user.description ?? '');
+    final chargeCtrl = TextEditingController(
+        text: (user.visitingCharge ?? 0) > 0
+            ? '${user.visitingCharge}'
+            : '');
+    final experienceCtrl = TextEditingController(
+        text: (user.experienceYears ?? 0) > 0
+            ? '${user.experienceYears}'
+            : '');
     String? selectedCategory = user.category;
 
     const categories = [
@@ -370,6 +378,30 @@ class WorkerProfileScreen extends StatelessWidget {
                         Icons.access_time_outlined,
                         hint: 'e.g. Mon–Sat, 9am–7pm'),
                     const SizedBox(height: 10),
+                    _sheetField(chargeCtrl, 'Visiting Charge (₹)',
+                        Icons.currency_rupee_outlined,
+                        hint: 'e.g. 199  (leave blank for free)',
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return null;
+                          if (int.tryParse(v.trim()) == null) {
+                            return 'Enter a valid number';
+                          }
+                          return null;
+                        }),
+                    const SizedBox(height: 10),
+                    _sheetField(experienceCtrl, 'Experience (Years)',
+                        Icons.work_history_outlined,
+                        hint: 'e.g. 5  (leave blank if new)',
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return null;
+                          if (int.tryParse(v.trim()) == null) {
+                            return 'Enter a valid number';
+                          }
+                          return null;
+                        }),
+                    const SizedBox(height: 10),
                     _sheetField(descCtrl, 'Short Description',
                         Icons.notes_outlined,
                         hint: 'Brief about your experience...',
@@ -397,6 +429,12 @@ class WorkerProfileScreen extends StatelessWidget {
                             workerHours: hoursCtrl.text.trim(),
                             description: descCtrl.text.trim(),
                             category: selectedCategory,
+                            visitingCharge: chargeCtrl.text.trim().isEmpty
+                                ? 0
+                                : int.tryParse(chargeCtrl.text.trim()),
+                            experienceYears: experienceCtrl.text.trim().isEmpty
+                                ? 0
+                                : int.tryParse(experienceCtrl.text.trim()),
                           );
                           if (!ctx.mounted) return;
                           Navigator.pop(ctx);

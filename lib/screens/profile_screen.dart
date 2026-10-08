@@ -19,7 +19,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final nameCtrl = TextEditingController(text: user.name);
     final phoneCtrl = TextEditingController(text: user.phone);
     final addressCtrl = TextEditingController(text: user.address);
-    final emailCtrl = TextEditingController(text: user.email);
     final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
@@ -90,17 +89,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter address' : null,
                   ),
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    controller: emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
                   const SizedBox(height: 20),
 
                   SizedBox(
@@ -118,7 +106,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           name: nameCtrl.text.trim(),
                           phone: phoneCtrl.text.trim(),
                           address: addressCtrl.text.trim(),
-                          email: emailCtrl.text.trim(),
                         );
                         if (!ctx.mounted || !mounted) return;
                         Navigator.pop(ctx);
@@ -331,31 +318,83 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           subtitle: const Text('v1.0.0 • College Project Edition', style: TextStyle(fontSize: 11)),
                           trailing: const Icon(Icons.chevron_right, size: 20),
                           onTap: () {
-                            showAboutDialog(
+                            showDialog(
                               context: context,
-                              applicationName: AppConfig.appName,
-                              applicationVersion: '1.0.0',
-                              applicationIcon: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: ClipOval(
-                                  child: Image.asset(
-                                    'assets/images/app_logo.png',
-                                    fit: BoxFit.cover,
+                                title: Row(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          'assets/images/app_logo.png',
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            AppConfig.appName,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          const Text(
+                                            'Version 1.0.0',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'KaamSetu bridges local gig & small workers (electricians, plumbers, carpenters, painters, AC technicians) directly with nearby customers with zero middleman commissions.',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.5,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      AppConfig.copyright,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Close'),
                                   ),
-                                ),
+                                ],
                               ),
-                              applicationLegalese: AppConfig.copyright,
-                              children: const [
-                                SizedBox(height: 8),
-                                Text(
-                                  'KaamSetu bridges local gig & small workers (electricians, plumbers, carpenters, painters, AC technicians) directly with nearby customers with zero middleman commissions.',
-                                ),
-                              ],
                             );
                           },
                         ),

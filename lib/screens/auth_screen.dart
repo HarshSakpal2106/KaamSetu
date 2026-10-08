@@ -21,7 +21,7 @@ class _AuthScreenState extends State<AuthScreen>
 
   // Login form
   final _loginFormKey = GlobalKey<FormState>();
-  final _loginPhoneOrEmailCtrl = TextEditingController();
+  final _loginPhoneCtrl = TextEditingController();
   final _loginPasswordCtrl = TextEditingController();
 
   // Customer sign-up form
@@ -60,7 +60,7 @@ class _AuthScreenState extends State<AuthScreen>
   @override
   void dispose() {
     _tabController.dispose();
-    _loginPhoneOrEmailCtrl.dispose();
+    _loginPhoneCtrl.dispose();
     _loginPasswordCtrl.dispose();
     _signupNameCtrl.dispose();
     _signupPhoneCtrl.dispose();
@@ -89,7 +89,7 @@ class _AuthScreenState extends State<AuthScreen>
     setState(() => _isLoading = true);
 
     final result = await AuthService().login(
-      phoneOrEmail: _loginPhoneOrEmailCtrl.text.trim(),
+      phoneOrEmail: _loginPhoneCtrl.text.trim(),
       password: _loginPasswordCtrl.text.trim(),
       role: _selectedRole ?? UserRole.customer,
     );
@@ -284,7 +284,7 @@ class _AuthScreenState extends State<AuthScreen>
                         : AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Text(
-                isWorker ? '🔧 Worker' : '👤 Customer',
+                isWorker ? 'Worker' : 'Customer',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -381,23 +381,28 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 18),
 
             TextFormField(
-              controller: _loginPhoneOrEmailCtrl,
-              keyboardType: TextInputType.emailAddress,
+              controller: _loginPhoneCtrl,
+              keyboardType: TextInputType.phone,
               decoration: InputDecoration(
-                labelText: 'Phone Number or Email',
-                hintText: isWorker
-                    ? 'e.g. +91 98765 43210'
-                    : 'e.g. +91 98765 43210',
+                labelText: 'Phone Number',
+                hintText: 'e.g. 9876543210',
                 prefixIcon:
-                    const Icon(Icons.person_outline, size: 20),
+                    const Icon(Icons.phone_outlined, size: 20),
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10)),
                 contentPadding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 12),
               ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Enter your phone or email'
-                  : null,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) {
+                  return 'Enter your phone number';
+                }
+                final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+                if (digits.length != 10) {
+                  return 'Enter a valid 10-digit phone number';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 12),
 
@@ -507,12 +512,19 @@ class _AuthScreenState extends State<AuthScreen>
               _field(
                 controller: _signupPhoneCtrl,
                 label: 'Phone Number',
-                hint: 'e.g. +91 98765 43210',
+                hint: 'e.g. 9876543210',
                 icon: Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Enter phone number'
-                    : null,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Enter phone number';
+                  }
+                  final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+                  if (digits.length != 10) {
+                    return 'Enter a valid 10-digit phone number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 10),
 
@@ -588,7 +600,7 @@ class _AuthScreenState extends State<AuthScreen>
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   labelText: 'Create Password',
-                  hintText: 'At least 4 characters',
+                  hintText: 'At least 8 characters',
                   prefixIcon:
                       const Icon(Icons.lock_outline, size: 20),
                   border: OutlineInputBorder(
@@ -596,8 +608,8 @@ class _AuthScreenState extends State<AuthScreen>
                   contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 12),
                 ),
-                validator: (v) => (v == null || v.length < 4)
-                    ? 'Password must be at least 4 characters'
+                validator: (v) => (v == null || v.length < 8)
+                    ? 'Password must be at least 8 characters'
                     : null,
               ),
               const SizedBox(height: 16),

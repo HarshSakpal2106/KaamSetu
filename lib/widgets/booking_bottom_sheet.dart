@@ -74,8 +74,10 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
     setState(() => _isSubmitting = true);
 
     final String dateString = DateFormat('dd MMM yyyy').format(DateTime.now());
+    final currentUser = AuthService().currentUser.value;
     final newRequest = ServiceRequestModel(
       id: 'KS-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}',
+      customerId: currentUser?.id,
       customerName: _nameController.text.trim(),
       customerPhone: _phoneController.text.trim(),
       customerAddress: _addressController.text.trim(),

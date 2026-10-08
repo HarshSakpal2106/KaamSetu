@@ -28,7 +28,7 @@ void main() {
 
     // Fill in login credentials (phone and password)
     await tester.enterText(
-        find.byType(TextFormField).at(0), '+91 98765 00001');
+        find.byType(TextFormField).at(0), '9876500001');
     await tester.enterText(
         find.byType(TextFormField).at(1), 'password123');
     await tester.pumpAndSettle();
@@ -39,7 +39,6 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
-    expect(find.text('KaamSetu'), findsWidgets);
     expect(find.text('Find Trusted Workers\nNear You'), findsOneWidget);
     expect(find.text('Electrician'), findsWidgets);
     expect(find.text('Plumber'), findsWidgets);

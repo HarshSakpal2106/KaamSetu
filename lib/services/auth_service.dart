@@ -36,7 +36,7 @@ class AuthService {
     if (value.contains('@')) return value.toLowerCase();
     final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) {
-      throw const FormatException('Enter a valid phone number or email');
+      throw const FormatException('Enter a valid phone number');
     }
     return '$digits@users.kaamsetu.app';
   }
@@ -110,7 +110,7 @@ class AuthService {
     required String name,
     required String phone,
     required String address,
-    required String email,
+    String? email,
     String? shopAddress,
     String? workerHours,
     String? description,
@@ -125,7 +125,7 @@ class AuthService {
       name: name,
       phone: phone,
       address: address,
-      email: email,
+      email: email ?? existing.email,
       shopAddress: shopAddress,
       workerHours: workerHours,
       description: description,
@@ -263,13 +263,13 @@ class AuthService {
       case 'user-not-found':
       case 'wrong-password':
       case 'invalid-credential':
-        return 'Wrong email/phone or password.';
+        return 'Wrong phone number or password.';
       case 'email-already-in-use':
-        return 'An account already exists with this phone or email.';
+        return 'An account already exists with this phone number.';
       case 'weak-password':
         return 'Password must be at least 6 characters.';
       case 'invalid-email':
-        return 'Enter a valid phone number or email.';
+        return 'Enter a valid phone number.';
       case 'network-request-failed':
         return 'Network error. Check your internet connection.';
       default:

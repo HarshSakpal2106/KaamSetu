@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../models/service_request_model.dart';
+import '../models/user_model.dart';
 import '../repositories/mock_worker_repository.dart';
+import '../services/auth_service.dart';
 import '../services/launcher_service.dart';
 
 class BookingsScreen extends StatefulWidget {
@@ -146,29 +148,38 @@ class _BookingsScreenState extends State<BookingsScreen>
           ],
         ),
       ),
-      body: StreamBuilder<List<ServiceRequestModel>>(
-        stream: _repository.watchRequests(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: ValueListenableBuilder<UserModel?>(
+        valueListenable: AuthService().currentUser,
+        builder: (context, currentUser, _) {
+          return StreamBuilder<List<ServiceRequestModel>>(
+            stream: _repository.watchRequests(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          final allRequests = snapshot.data!;
-          final activeRequests = allRequests.where((r) =>
-              r.status == BookingStatus.requested ||
-              r.status == BookingStatus.accepted ||
-              r.status == BookingStatus.inProgress).toList();
+              final allRequests = snapshot.data!;
+              final userRequests = allRequests
+                  .where((r) => r.belongsToCustomer(currentUser))
+                  .toList();
 
-          final pastRequests = allRequests.where((r) =>
-              r.status == BookingStatus.completed ||
-              r.status == BookingStatus.cancelled).toList();
+              final activeRequests = userRequests.where((r) =>
+                  r.status == BookingStatus.requested ||
+                  r.status == BookingStatus.accepted ||
+                  r.status == BookingStatus.inProgress).toList();
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildRequestsList(activeRequests, isActiveTab: true),
-              _buildRequestsList(pastRequests, isActiveTab: false),
-            ],
+              final pastRequests = userRequests.where((r) =>
+                  r.status == BookingStatus.completed ||
+                  r.status == BookingStatus.cancelled).toList();
+
+              return TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildRequestsList(activeRequests, isActiveTab: true),
+                  _buildRequestsList(pastRequests, isActiveTab: false),
+                ],
+              );
+            },
           );
         },
       ),

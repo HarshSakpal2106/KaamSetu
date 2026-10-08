@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import 'user_model.dart';
 
 enum BookingStatus {
   requested,
@@ -76,6 +77,7 @@ enum BookingStatus {
 
 class ServiceRequestModel {
   final String id;
+  final String? customerId;
   final String customerName;
   final String customerPhone;
   final String customerAddress;
@@ -94,6 +96,7 @@ class ServiceRequestModel {
 
   const ServiceRequestModel({
     required this.id,
+    this.customerId,
     required this.customerName,
     required this.customerPhone,
     required this.customerAddress,
@@ -111,9 +114,40 @@ class ServiceRequestModel {
     this.reviewGiven,
   });
 
+  bool belongsToCustomer(UserModel? user) {
+    if (user == null) return false;
+    // 1. Direct customerId match
+    if (customerId != null && customerId!.isNotEmpty) {
+      return customerId == user.id;
+    }
+    // 2. Phone match fallback (for legacy bookings without customerId)
+    final userPhoneDigits = user.phone.replaceAll(RegExp(r'\D'), '');
+    final reqPhoneDigits = customerPhone.replaceAll(RegExp(r'\D'), '');
+    if (userPhoneDigits.isNotEmpty && reqPhoneDigits.isNotEmpty) {
+      if (userPhoneDigits == reqPhoneDigits ||
+          (userPhoneDigits.length >= 10 &&
+              reqPhoneDigits.endsWith(
+                  userPhoneDigits.substring(userPhoneDigits.length - 10))) ||
+          (reqPhoneDigits.length >= 10 &&
+              userPhoneDigits.endsWith(
+                  reqPhoneDigits.substring(reqPhoneDigits.length - 10)))) {
+        return true;
+      }
+    }
+    // 3. Name match fallback (for legacy bookings without customerId or phone)
+    if (customerName.trim().isNotEmpty &&
+        user.name.trim().isNotEmpty &&
+        customerName.trim().toLowerCase() == user.name.trim().toLowerCase()) {
+      return true;
+    }
+    return false;
+  }
+
   factory ServiceRequestModel.fromJson(Map<String, dynamic> json) {
     return ServiceRequestModel(
-      id: json['id'] as String? ?? 'KS-${DateTime.now().millisecondsSinceEpoch}',
+      id: json['id'] as String? ??
+          'KS-${DateTime.now().millisecondsSinceEpoch}',
+      customerId: json['customerId'] as String?,
       customerName: json['customerName'] as String? ?? '',
       customerPhone: json['customerPhone'] as String? ?? '',
       customerAddress: json['customerAddress'] as String? ?? '',
@@ -121,7 +155,8 @@ class ServiceRequestModel {
       workerId: json['workerId'] as String? ?? '',
       workerName: json['workerName'] as String? ?? '',
       workerPhone: json['workerPhone'] as String? ?? '',
-      workerLocation: (json['workerLocation'] ?? json['location']) as String? ?? '',
+      workerLocation:
+          (json['workerLocation'] ?? json['location']) as String? ?? '',
       distance: json['distance'] as String? ?? '',
       status: BookingStatus.fromString(json['status'] as String?),
       date: json['date'] as String? ?? '',
@@ -135,6 +170,7 @@ class ServiceRequestModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'customerId': customerId,
       'customerName': customerName,
       'customerPhone': customerPhone,
       'customerAddress': customerAddress,
@@ -156,6 +192,7 @@ class ServiceRequestModel {
 
   ServiceRequestModel copyWith({
     String? id,
+    String? customerId,
     String? customerName,
     String? customerPhone,
     String? customerAddress,
@@ -174,6 +211,7 @@ class ServiceRequestModel {
   }) {
     return ServiceRequestModel(
       id: id ?? this.id,
+      customerId: customerId ?? this.customerId,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
       customerAddress: customerAddress ?? this.customerAddress,

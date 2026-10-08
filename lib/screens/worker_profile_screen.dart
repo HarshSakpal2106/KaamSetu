@@ -448,7 +448,6 @@ class WorkerProfileScreen extends StatelessWidget {
                             name: nameCtrl.text.trim(),
                             phone: phoneCtrl.text.trim(),
                             address: shopCtrl.text.trim(),
-                            email: user.email,
                             shopAddress: shopCtrl.text.trim(),
                             workerHours: hoursCtrl.text.trim(),
                             description: descCtrl.text.trim(),
